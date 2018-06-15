@@ -12,9 +12,10 @@ trait TopicMatchers extends Matchers {
       val partitions = left.partitions == right.partitions
       val replication = left.replicationFactor == right.replicationFactor
       val config = (left.config should contain allElementsOf right.config).isInstanceOf[Succeeded.type]
+      val acls = (left.acls should contain allElementsOf right.acls).isInstanceOf[Succeeded.type]
 
       MatchResult(
-        name && partitions && replication && config,
+        name && partitions && replication && config && acls,
         s"$left is not equivalent to $right",
         s"$left is equivalent to $right"
       )

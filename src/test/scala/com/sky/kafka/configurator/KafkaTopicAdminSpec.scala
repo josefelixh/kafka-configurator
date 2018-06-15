@@ -5,12 +5,13 @@ import java.util.UUID
 import com.sky.kafka.configurator.error.TopicNotFound
 import com.sky.kafka.matchers.TopicMatchers
 import common.KafkaIntSpec
+import org.scalatest.EitherValues
 import org.scalatest.concurrent.Eventually
 import org.zalando.grafter.StopOk
 
 import scala.util.{ Failure, Success }
 
-class KafkaTopicAdminSpec extends KafkaIntSpec with Eventually with TopicMatchers {
+class KafkaTopicAdminSpec extends KafkaIntSpec with Eventually with TopicMatchers with EitherValues {
 
   lazy val adminClient = KafkaTopicAdmin(kafkaAdminClient)
 
@@ -20,12 +21,11 @@ class KafkaTopicAdminSpec extends KafkaIntSpec with Eventually with TopicMatcher
     val inputTopic = someTopic.copy(config = Map(
       "retention.ms" -> "50000"
     ))
-
     adminClient.create(inputTopic) shouldBe Success(())
 
     eventually {
       val createdTopic = adminClient.fetch(inputTopic.name)
-      createdTopic.toEither.right.get should beEquivalentTo(inputTopic)
+      createdTopic.toEither.right.value should beEquivalentTo(inputTopic)
     }
   }
 
@@ -41,6 +41,23 @@ class KafkaTopicAdminSpec extends KafkaIntSpec with Eventually with TopicMatcher
     val inputTopic = someTopic.copy(replicationFactor = 2)
 
     adminClient.create(inputTopic) shouldBe a[Failure[_]]
+  }
+
+  it should "include acls when creating" in {
+    val topicWithAcls = someTopic.copy(acls = Seq(Acl(
+      user = "test-client",
+      group = "*",
+      consumer = true,
+      producer = true,
+      control = Allow
+    )))
+
+    adminClient.create(topicWithAcls)
+
+    eventually {
+      val createdTopic = adminClient.fetch(topicWithAcls.name)
+      createdTopic.toEither.right.get should beEquivalentTo(topicWithAcls)
+    }
   }
 
   "fetch" should "return a failure when fetching a topic that does not exist" in {

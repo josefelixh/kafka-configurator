@@ -18,12 +18,14 @@ object TopicConfigurationParser extends AutoDerivation {
       topicConfigs <- ymlAsJson.as[List[Topic]]
     } yield topicConfigs
 
-  case class TopicConfig(partitions: Int, replication: Int, config: Map[String, String])
+  case class TopicConfig(partitions: Int, replication: Int, config: Map[String, String], acls: Option[List[Acl]])
 
   implicit val topicsDecoder: Decoder[List[Topic]] = Decoder.instance { cursor =>
     for {
       configMap <- cursor.as[ListMap[String, TopicConfig]]
-      topics = configMap.map { case (name, conf) => Topic(name, conf.partitions, conf.replication, conf.config) }
+      topics = {
+        configMap.map { case (name, conf) => Topic(name, conf.partitions, conf.replication, conf.config, conf.acls.getOrElse(List.empty[Acl])) }
+      }
     } yield topics.toList
   }
 
@@ -41,5 +43,11 @@ object TopicConfigurationParser extends AutoDerivation {
         .mapValues(json => json.asString.toRight(failWithMsg(s"$json is not a string")))
         .sequenceU
     } yield stringMap
+  }
+
+  implicit val controlDecoder: Decoder[Control] = Decoder.decodeString.emap {
+    case "allow" => Allow.asRight
+    case "deny" => Deny.asRight
+    case _ => "Control value not allowed, valid option are [allow, deny]".asLeft
   }
 }

@@ -13,7 +13,12 @@ package object configurator {
 
   case class AppConfig(file: File = new File("."), bootstrapServers: String = "")
 
-  case class Topic(name: String, partitions: Int, replicationFactor: Int, config: Map[String, String])
+  case class Topic(name: String, partitions: Int, replicationFactor: Int, config: Map[String, String], acls: Seq[Acl] = Seq())
+  case class Acl(user: String, group: String, consumer: Boolean, producer: Boolean, control: Control)
+  sealed trait Control
+  case object Allow extends Control
+  case object Deny extends Control
+
 
   trait TopicReader {
     def fetch(topicName: String): Try[Topic]

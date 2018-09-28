@@ -1,0 +1,46 @@
+---
+version: '3.3'
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:4.1.1-2
+    environment:
+      ZOOKEEPER_SERVER_ID: 1
+      ZOOKEEPER_CLIENT_PORT: 22181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_INIT_LIMIT: 5
+      ZOOKEEPER_SYNC_LIMIT: 2
+      ZOOKEEPER_SERVERS: zookeeper:22888:23888
+    ports:
+      - 22181:22181
+
+  kafka-ssl:
+    image: confluentinc/cp-kafka:4.1.1-2
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:22181
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: '1'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: SSL:SSL,SSLOUT:SSL
+      KAFKA_ADVERTISED_LISTENERS: SSL://kafka-ssl:19092,SSLOUT://localhost:19093
+      KAFKA_SSL_KEYSTORE_FILENAME: kafka.broker1.keystore.jks
+      KAFKA_SSL_KEYSTORE_CREDENTIALS: broker1_keystore_creds
+      KAFKA_SSL_KEY_CREDENTIALS: broker1_sslkey_creds
+      KAFKA_SSL_TRUSTSTORE_FILENAME: kafka.broker1.truststore.jks
+      KAFKA_SSL_TRUSTSTORE_CREDENTIALS: broker1_truststore_creds
+      KAFKA_SECURITY_INTER_BROKER_PROTOCOL: SSL
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'false'
+      KAFKA_SSL_CLIENT_AUTH: 'required'
+      KAFKA_SUPER_USERS: 'User:CN=client, OU=Unknown, O=Unknown, L=Unknown, S=Unknown, C=Unknown;User:CN=broker1, OU=Unknown, O=Unknown, L=Unknown, S=Unknown, C=Unknown'
+      KAFKA_AUTHORIZER_CLASS_NAME: 'kafka.security.auth.SimpleAclAuthorizer'
+    volumes:
+      - ${PWD}/docker/tls:/etc/kafka/secrets
+    ports:
+      - 19092:19092
+      - 19093:19093
+
+#  kafka-client:
+#    image: confluentinc/cp-kafka:latest
+#    volumes:
+#      - ${PWD}/docker/tls:/etc/kafka/secrets
+#    entrypoint: "tail -f /dev/null"

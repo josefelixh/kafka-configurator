@@ -1,3 +1,4 @@
+import com.tapad.docker.DockerComposePlugin.autoImport.{dockerImageCreationTask, testTagsToExecute}
 import com.typesafe.sbt.packager.Keys._
 import com.typesafe.sbt.packager.docker.Cmd
 import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport.{Docker => docker}
@@ -14,7 +15,9 @@ object Docker {
     dockerCommands ++= Seq(
       Cmd("USER", "root"),
       Cmd("RUN", "apk update && apk add bash")
-    )
+    ),
+    dockerImageCreationTask := { version.value },
+    testTagsToExecute := "docker-compose"
   )
 
   def updateLatest = Def.setting {
@@ -22,4 +25,3 @@ object Docker {
     else false
   }
 }
-

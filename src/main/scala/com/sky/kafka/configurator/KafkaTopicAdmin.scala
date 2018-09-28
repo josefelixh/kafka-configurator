@@ -4,8 +4,11 @@ import java.util.concurrent.ExecutionException
 
 import cats.data.Reader
 import com.sky.kafka.configurator.error.TopicNotFound
+import kafka.security.auth.{ Authorizer, Resource, Topic => TopicResource }
+import kafka.utils.CoreUtils
 import org.apache.kafka.clients.admin.AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG
 import org.apache.kafka.clients.admin._
+import org.apache.kafka.common.acl.AclBindingFilter
 import org.apache.kafka.common.config.ConfigResource
 import org.apache.kafka.common.errors.UnknownTopicOrPartitionException
 import org.zalando.grafter.{ Stop, StopResult }
@@ -41,14 +44,35 @@ class KafkaTopicAdmin(ac: AdminClient) extends TopicReader with TopicWriter with
       allConfigs.get(configResourceForTopic(topicName))
     }
 
+    def acls = Try {
+      val authorizer: Authorizer =
+        CoreUtils.createObject[Authorizer]("kafka.security.auth.SimpleAclAuthorize")
+
+      val authAcls = authorizer.getAcls(new Resource(TopicResource, topicName))
+      authAcls.toSeq.map { acl =>
+        Acl(acl.principal.getName, acl.host, acl.operation.name == "Read", acl.operation.name == "Write", acl.permissionType)
+      }
+//      val allAcls = ac.describeAcls(AclBindingFilter.ANY)
+//      try {
+//        allAcls.values().get().asScala.foreach(println)
+//      } catch {
+//        case e: Throwable => println(e)
+//      }
+
+      Seq.empty[Acl]
+    }
+
     for {
       desc <- topicDescription
       partitions = desc.partitions().size()
       replicationFactor = desc.partitions().asScala.head.replicas().size()
       config <- topicConfig
-    } yield Topic(desc.name(), partitions, replicationFactor, config)
+      acls <- acls
+    } yield Topic(desc.name(), partitions, replicationFactor, config, acls)
 
   }
+
+
 
   override def create(topic: Topic) = Try {
     val newTopic = new NewTopic(topic.name, topic.partitions, topic.replicationFactor.toShort).configs(topic.config.asJava)

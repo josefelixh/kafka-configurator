@@ -19,7 +19,6 @@ package object configurator {
   case object Allow extends Control
   case object Deny extends Control
 
-
   trait TopicReader {
     def fetch(topicName: String): Try[Topic]
   }

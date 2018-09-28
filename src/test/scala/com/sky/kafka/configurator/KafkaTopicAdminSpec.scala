@@ -4,13 +4,13 @@ import java.util.UUID
 
 import com.sky.kafka.configurator.error.TopicNotFound
 import com.sky.kafka.matchers.TopicMatchers
-import common.KafkaIntSpec
+import common.{ DockerCompose, EmbeddedKafkaIntSpec }
 import org.scalatest.concurrent.Eventually
 import org.zalando.grafter.StopOk
 
 import scala.util.{ Failure, Success }
 
-class KafkaTopicAdminSpec extends KafkaIntSpec with Eventually with TopicMatchers {
+class KafkaTopicAdminSpec extends EmbeddedKafkaIntSpec with Eventually with TopicMatchers {
 
   lazy val adminClient = KafkaTopicAdmin(kafkaAdminClient)
 
@@ -19,6 +19,19 @@ class KafkaTopicAdminSpec extends KafkaIntSpec with Eventually with TopicMatcher
   "create" should "create topic using the given configuration" in {
     val inputTopic = someTopic.copy(config = Map(
       "retention.ms" -> "50000"
+    ))
+
+    adminClient.create(inputTopic) shouldBe Success(())
+
+    eventually {
+      val createdTopic = adminClient.fetch(inputTopic.name)
+      createdTopic.toEither.right.get should beEquivalentTo(inputTopic)
+    }
+  }
+
+  it should "also create acls for topic" in {
+    val inputTopic = someTopic.copy(acls = Seq(
+      Acl("aUser", "*", true, true, Allow)
     ))
 
     adminClient.create(inputTopic) shouldBe Success(())

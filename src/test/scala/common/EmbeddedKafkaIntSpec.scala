@@ -1,5 +1,7 @@
 package common
 
+import java.net.ServerSocket
+
 import cakesolutions.kafka.testkit.KafkaServer
 import kafka.utils.ZkUtils
 import org.apache.kafka.clients.admin.AdminClient
@@ -11,7 +13,7 @@ import org.scalatest.time.{ Millis, Seconds, Span }
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 
-abstract class KafkaIntSpec extends BaseSpec with BeforeAndAfterAll with PatienceConfiguration {
+abstract class EmbeddedKafkaIntSpec extends BaseSpec with BeforeAndAfterAll with PatienceConfiguration {
 
   override implicit val patienceConfig = PatienceConfig(Span(3, Seconds), Span(250, Millis))
 

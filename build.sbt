@@ -17,6 +17,7 @@ val dependencies = Seq(
   "com.typesafe.scala-logging" %% "scala-logging" % "3.5.0",
   "io.circe" %% "circe-yaml" % "0.6.1",
   "io.circe" %% "circe-generic" % "0.8.0",
+  "org.slf4j" % "slf4j-simple" % "1.7.25",
 
   "org.scalatest" %% "scalatest" % "3.0.1" % Test,
   "net.cakesolutions" %% "scala-kafka-client-testkit" % kafkaVersion % Test,
@@ -24,7 +25,7 @@ val dependencies = Seq(
 ) ++ kafkaDeps
 
 val root = (project in file("."))
-  .enablePlugins(BuildInfoPlugin, JavaAppPackaging, UniversalDeployPlugin, DockerPlugin)
+  .enablePlugins(BuildInfoPlugin, JavaAppPackaging, UniversalDeployPlugin, DockerPlugin, DockerComposePlugin)
   .settings(
     defineCommandAliases,
     organization := "com.sky",
